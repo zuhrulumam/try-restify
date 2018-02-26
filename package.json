@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "restify": "^6.3.4"
+    "restify": "^6.3.4",
+    "nodemailer": "4.6.0"
   }
 }

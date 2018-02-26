@@ -4,6 +4,8 @@ ADD . /home/nobody/app
 
 RUN chown -R nobody /home/nobody
 
+RUN npm install -g pm2
+
 USER nobody
 ENV HOME /home/nobody
 
@@ -14,4 +16,5 @@ RUN npm install
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["pm2-dev", "process.dev.json"]
+# CMD ["npm", "start"]

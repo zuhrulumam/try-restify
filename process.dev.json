@@ -1,0 +1,13 @@
+{
+  "apps": [
+    {
+      "name": "node_server",
+      "script": "index.js",
+      "watch": true,
+      "watch_options": {
+        "usePolling": true
+      },
+      "ignore_watch": ["node_modules", "assets", ".tmp"]
+    }
+  ]
+}
