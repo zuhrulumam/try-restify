@@ -1,5 +1,7 @@
 var restify = require('restify');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
+const restifyPlugins = require('restify-plugins');
 
 function respond(req, res, next) {
   res.send('hello test yeah ' + req.params.name);
@@ -32,7 +34,33 @@ function respond(req, res, next) {
 var server = restify.createServer();
 server.get('/hello/:name', respond);
 server.head('/hello/:name', respond);
+/**
+ * Middleware
+ */
+// server.use(restifyPlugins.jsonBodyParser({ mapParams: true }));
+server.use(restifyPlugins.bodyParser({ mapParams: true }));
+server.use(restifyPlugins.acceptParser(server.acceptable));
+server.use(restifyPlugins.queryParser({ mapParams: true }));
+server.use(restifyPlugins.fullResponse());
 
+/**
+ * Start Server, Connect to DB & Require Routes
+ */
 server.listen(3000, function() {
-  console.log('%s listening at %s', server.name, server.url);
+  // console.log('%s listening at %s', server.name, server.url);
+
+  mongoose.Promise = global.Promise;
+  mongoose.connect(process.env.MONGO_URI);
+
+  const db = mongoose.connection;
+
+  db.on('error', err => {
+    console.error(err);
+    process.exit(1);
+  });
+
+  db.once('open', () => {
+    require('./routes')(server);
+    console.log(`Server is listening on port ${server.url}`);
+  });
 });

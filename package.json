@@ -9,7 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "mongoose": "^5.0.7",
+    "mongoose-string-query": "^0.2.5",
+    "mongoose-timestamp": "^0.6.0",
+    "nodemailer": "4.6.0",
     "restify": "^6.3.4",
-    "nodemailer": "4.6.0"
+    "restify-errors": "^6.0.0",
+    "restify-plugins": "^1.6.0"
   }
 }
