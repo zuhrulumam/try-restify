@@ -1,0 +1,41 @@
+version: '2.1'
+
+services: 
+  mongodb:  
+    image: umam/restify-mongo
+    build:
+      context: ./mongo
+      # dockerfile: Dockerfile
+    ports:
+      - "27017:27017"
+    env_file: 
+      - ./mongo/auth.env
+    command: mongod 
+    networks:
+      - app-network
+
+  server:
+    restart: always
+    image: umam/restify-try:dev
+    build:
+      context: ./
+      dockerfile: development.dockerfile
+    volumes:
+      - "./:/home/nobody/app/"
+      - /home/nobody/app/node_modules
+    links: 
+      - "mongodb:mongo"
+    environment:
+      - "NODE_ENV=development"
+    env_file:
+      - ./web.env
+    ports: 
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+networks: 
+  app-network:
+    driver: bridge

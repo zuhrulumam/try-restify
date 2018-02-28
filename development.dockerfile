@@ -1,5 +1,7 @@
 FROM node:carbon-alpine
 
+COPY package.json /home/nobody/app/
+COPY process.dev.json /home/nobody/app/
 ADD . /home/nobody/app
 
 RUN chown -R nobody /home/nobody
@@ -17,4 +19,3 @@ RUN npm install
 EXPOSE 3000
 
 CMD ["pm2-dev", "process.dev.json"]
-# CMD ["npm", "start"]

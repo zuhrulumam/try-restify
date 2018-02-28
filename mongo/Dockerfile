@@ -1,6 +1,6 @@
 FROM mongo:3.4
 
-COPY ./mongo/createUser.sh /docker-entrypoint-initdb.d/
+COPY ./createUser.sh /docker-entrypoint-initdb.d/
 
 RUN chown -R mongodb:mongodb /var/log /data/db 
 

@@ -1,7 +1,10 @@
 var restify = require('restify');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
-const restifyPlugins = require('restify-plugins');
+// const restifyPlugins = require('restify-plugins');
+const restifyPlugins = require('restify').plugins;
+const jwt = require('jsonwebtoken');
+const corsMiddleware = require('restify-cors-middleware');
 
 function respond(req, res, next) {
   res.send('hello test yeah ' + req.params.name);
@@ -31,17 +34,115 @@ function respond(req, res, next) {
   });
 }
 
+const cors = corsMiddleware({
+  preflightMaxAge: 5, //Optional
+  origins: ['http://api.myapp.com', 'http://web.myapp.com'],
+  allowHeaders: ['API-Token'],
+  exposeHeaders: ['API-Token-Expiry'],
+});
+
 var server = restify.createServer();
-server.get('/hello/:name', respond);
-server.head('/hello/:name', respond);
+
 /**
  * Middleware
  */
 // server.use(restifyPlugins.jsonBodyParser({ mapParams: true }));
-server.use(restifyPlugins.bodyParser({ mapParams: true }));
+server.use(
+  restifyPlugins.bodyParser({
+    mapParams: true,
+  })
+);
 server.use(restifyPlugins.acceptParser(server.acceptable));
-server.use(restifyPlugins.queryParser({ mapParams: true }));
+server.use(
+  restifyPlugins.queryParser({
+    mapParams: true,
+  })
+);
 server.use(restifyPlugins.fullResponse());
+
+server.pre(restifyPlugins.pre.context()); // set and get
+
+server.pre(cors.preflight);
+server.use(cors.actual);
+
+// server.use(
+//   restify.CORS({
+//     origins: ['https://mydomain.com'],
+//     credentials: true,
+//     headers: ['Accept'],
+//   })
+// );
+
+server.pre((req, res, next) => {
+  console.log('pre');
+  req.set('userData', {
+    id: 123,
+  });
+  next();
+});
+
+function authorization(req, res, next) {
+  let token;
+
+  if (req.headers && req.headers.authorization) {
+    let parts = req.headers.authorization.split(' ');
+    if (parts.length == 2) {
+      let scheme = parts[0],
+        credentials = parts[1];
+
+      if (/^Bearer$/i.test(scheme)) {
+        token = credentials;
+      }
+    } else {
+      res.send(401, {
+        err: 'Format is Authorization: Bearer [token]',
+      });
+      return next(false);
+    }
+  } else if (req.params.token) {
+    token = req.params.token;
+    // We delete the token from param to not mess with blueprints
+    delete req.query.token;
+  } else {
+    res.send(401, {
+      err: 'No Authorization header was found',
+    });
+    return next(false);
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'secret ndes');
+    req.userData = decoded.id;
+    return next();
+  } catch (error) {
+    res.send(401, {
+      err: 'error decode',
+    });
+    return next(false);
+  }
+}
+
+// server.get('/hello/:name', respond);
+// server.head('/hello/:name', respond);
+
+server.get('/test', authorization, (req, res, next) => {
+  console.log(req.get('userData'));
+  console.log(req.userData);
+  console.log(req.headers);
+  res.send(200, req.params);
+  next();
+});
+
+server.get('/token', (req, res, next) => {
+  const token = jwt.sign(
+    {
+      id: 123,
+    },
+    'secret ndes'
+  );
+  res.send(200, token);
+  next();
+});
 
 /**
  * Start Server, Connect to DB & Require Routes
