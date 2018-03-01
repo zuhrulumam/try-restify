@@ -48,4 +48,12 @@ docker build -t umam/restify-mongo .
 * cors `Not yet Tested`
 * jwt
 
+### Day 4
+
+* passport github
+
+### Day 5 (next)
+* restructuring
+
+
 [Visit Team Website](https://archipelago-ds.com)

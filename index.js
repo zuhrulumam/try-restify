@@ -5,6 +5,33 @@ const mongoose = require('mongoose');
 const restifyPlugins = require('restify').plugins;
 const jwt = require('jsonwebtoken');
 const corsMiddleware = require('restify-cors-middleware');
+var passport = require('passport');
+var GithubStrategy = require('passport-github').Strategy;
+const request = require('request');
+
+passport.use(
+  new GithubStrategy(
+    {
+      clientID: process.env.GithubClientID,
+      clientSecret: process.env.GithubClientSecret,
+      callbackURL: process.env.GithubCallbackURL,
+    },
+    function(accessToken, refreshToken, profile, done) {
+      console.log(profile);
+      console.log('Access Token ', accessToken);
+      done(null, profile);
+    }
+  )
+);
+
+// serialize and deserialize
+passport.serializeUser(function(user, done) {
+  console.log('serializeUser: ' + user._id);
+  done(null, user._id);
+});
+passport.deserializeUser(function(id, done) {
+  done(null, id);
+});
 
 function respond(req, res, next) {
   res.send('hello test yeah ' + req.params.name);
@@ -65,13 +92,63 @@ server.pre(restifyPlugins.pre.context()); // set and get
 server.pre(cors.preflight);
 server.use(cors.actual);
 
-// server.use(
-//   restify.CORS({
-//     origins: ['https://mydomain.com'],
-//     credentials: true,
-//     headers: ['Accept'],
-//   })
-// );
+server.get(
+  '/auth/github/browser',
+  passport.authenticate('github', { session: false }),
+  function(req, res) {}
+);
+
+server.get(
+  '/auth/github/checkToken',
+  (req, res, next) => {
+    console.log(req.params.access_token);
+    request(
+      {
+        url: 'https://api.github.com/user',
+        headers: {
+          'User-Agent': 'request',
+        },
+        qs: {
+          access_token: req.params.access_token,
+        },
+      },
+      (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          console.log('body ', body); // Show the HTML for the Google homepage.
+          return next();
+        } else {
+          console.log('err ', error);
+          console.log('code ', response.statusCode);
+          console.log('response ', response);
+          res.send(response.statusCode, {
+            err: 'Error !!',
+          });
+          return next(false);
+        }
+      }
+    );
+    // Facebook: https://graph.facebook.com/me
+    //   Github: https://api.github.com/user
+    //   Google: https://www.googleapis.com/oauth2/v3/tokeninfo
+  },
+  function(req, res, next) {
+    console.log('called');
+    res.send(200, 'True User');
+    return next();
+    // GET /auth/github?access_token=<TOKEN>
+  }
+);
+
+server.get(
+  '/auth/github/callback',
+  passport.authenticate('github', {
+    failureRedirect: '/',
+  }),
+  function(req, res, next) {
+    console.log('callback called');
+    return next();
+  }
+);
 
 server.pre((req, res, next) => {
   console.log('pre');

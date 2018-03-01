@@ -13,7 +13,7 @@ ENV HOME /home/nobody
 
 WORKDIR /home/nobody/app
 
-ENV NODE_ENV production
+ENV NODE_ENV development
 RUN npm install
 
 EXPOSE 3000
